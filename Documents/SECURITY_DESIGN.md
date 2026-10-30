@@ -16,6 +16,7 @@ Protect a simulated enterprise that has privileged Management and IT segments, s
 | Engineering VLAN 40 | Assigned business services | No lateral access to sensitive departments/Management |
 | Guest VLAN 70 | Public/external resources and minimal supporting DNS/DHCP | No corporate VLAN access |
 | Servers VLAN 80 | Deliver approved shared services | No uncontrolled initiation into client segments |
+| Printers VLAN 90 | Permit authorized internal printing and administration (design objective) | Printer-to-user lateral traffic to be restricted in a future ACL policy |
 | Untrusted/public area | Approved services only | No direct route to internal private VLANs |
 
 ## Device placement in latest topology
@@ -48,3 +49,7 @@ The pictured ASA is **inline**, not a separate firewall-protected DMZ branch. Th
 ## Suggested minimal test plan for future iteration
 
 For each policy rule, collect a positive test (allowed application connection) and a negative test (blocked connection) from the appropriate source VLAN. Test Management→Finance/HR, Sales→Finance, Guest→internal server, Guest→external web, internal DHCP/DNS, and external→corporate. Record firewall/ACL counters and logs; verify routing/NAT and return packets before treating a dropped ping as proof of filtering. Preserve a working project backup before changes.
+
+## Printer segmentation update
+
+The two shared printers were moved to VLAN 90 (`10.40.218.0/27`), with static IPs `10.40.218.10` and `10.40.218.11` and gateway `10.40.218.1`. This separates printers at Layer 2 and prepares for future printer access policies; **printer-specific ACL enforcement is not claimed**.
