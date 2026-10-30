@@ -6,7 +6,7 @@ This report documents a simulated enterprise network for Apex Technologies, a fi
 
 ### Scope and delivery status
 
-- **Built:** Four departmental/floor access-switch areas, one server access switch, two Layer 3 distribution switches, two edge routers, ISP router, centralized DHCP/DNS/HTTP services, representative endpoints, wireless access devices and printers.
+- **Built:** Four departmental/floor access-switch areas, one server access switch, two Layer 3 distribution switches, two edge routers, ISP router, centralized DHCP/DNS/HTTP services, representative endpoints, wireless access devices and printers, now assigned to dedicated VLAN 90.
 - **Configured and tested:** Department DHCP, internal website name resolution and HTTP, inter-VLAN connectivity in successful tests, routed edge links, OSPF FULL adjacencies and learned routes, external test HTTP **prior to firewall changes**.
 - **Configured but not fully validated:** HSRP failover, end-to-end resilience under physical fault, complete management accessibility under sustained testing.
 - **Security exploration:** ACL revisions/rollback and insertion of an inline ASA 5505 between ISP and edge routers. The final security design was **not validated as an operational firewall policy**; post-cutover external reachability failed in at least one test.
@@ -42,8 +42,13 @@ The enterprise uses the `10.40.0.0/16` private address allocation with VLSM subn
 | 60 | Management | `10.40.220.0/27` | `255.255.255.224` | `10.40.220.1` | Static |
 | 70 | Guest | `10.40.125.0/25` | `255.255.255.128` | `10.40.125.1` | DHCP |
 | 80 | Servers | `10.40.219.0/26` | `255.255.255.192` | `10.40.219.1` | Static |
+| 90 | Printers | `10.40.218.0/27` | `255.255.255.224` | `10.40.218.1` | Static |
 
 Management client endpoints were configured as `10.40.220.10` and `10.40.220.11` with mask `/27`, virtual gateway `.1`, and internal DNS `10.40.219.11`. They initially failed DHCP because **VLAN 60 intentionally had no DHCP pool**. An APIPA address was therefore a symptom of missing DHCP service for that segment, not proof of ACL failure.
+
+### Dedicated printer segment (VLAN 90)
+
+As a later incremental upgrade, the Finance and Engineering printers were placed into dedicated VLAN 90 access ports on their respective floor switches, with VLAN 90 available across the distribution/uplink fabric. Each printer received a static address: **Finance Printer `10.40.218.10/27`** and **Engineering Printer `10.40.218.11/27`**, both using HSRP virtual gateway **`10.40.218.1`**. Distribution SVIs use `.2` and `.3` in this subnet. The user reported a successful ping after configuration, demonstrating tested IP reachability to a printer; the exact source/destination of that ping was not recorded in the supplied evidence. No printer-specific ACL policy was verified. A distinct VLAN provides its own Layer 2 broadcast domain, but inter-VLAN routing still permits traffic without separate restrictions.
 
 ### DHCP pool ranges used in the lab
 
@@ -56,7 +61,7 @@ Management client endpoints were configured as `10.40.220.10` and `10.40.220.11`
 | 50 | `10.40.189.10` | 35 |
 | 70 | `10.40.125.10` | 100 |
 
-Distribution SVIs on client VLANs are configured with `ip helper-address 10.40.219.10` to relay DHCP requests to the server VLAN. VLAN 60 and 80 were intentionally static.
+Distribution SVIs on client VLANs are configured with `ip helper-address 10.40.219.10` to relay DHCP requests to the server VLAN. VLANs 60, 80 and 90 use static addresses, with no printer DHCP pool.
 
 ## 4. Shared infrastructure services
 
@@ -127,6 +132,7 @@ See the standalone [security design](SECURITY_DESIGN.md) for the proposed policy
 | ACL enforcement | Intended result not consistently demonstrated | **Not validated** |
 | Firewall traffic and logging | External traffic failed after cutover; no confirmed log proof | **Not validated** |
 | Failover resilience | No complete unplug/reconvergence test documented | **Not validated** |
+| Printer VLAN upgrade | Static printer settings and successful ping reported | Basic printer reachability; printer-specific ACLs not tested |
 
 ### Packet Tracer simulation observations
 
@@ -167,6 +173,7 @@ The following are the selected device combinations for this project. Image files
 | [07 — External HTTP](../images/external-web-sales-pre-asa.png) | **Sales PC1** | Pre-ASA external access |
 | [08 — ASA](../images/asa-config.png) | FW-ASA | Configuration only; security effectiveness unverified |
 | [09 — Floor 4 switch](../images/floor4-access-vlans.png) | **Floor 4 access switch** | IT/Management access segmentation |
+| [10 — Printer VLAN](../images/10-printer-vlan.png) | Floor 2 + Floor 3 switches and printer IP configuration | VLAN 90 printer port membership/static addressing |
 
 See [the Evidence Guide](EVIDENCE_GUIDE.md) for page names, commands, and precise captions.
 
